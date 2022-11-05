@@ -1,11 +1,29 @@
 version: 2.1
 jobs:
-  build:
+  # fetching code from the repo
+  Fetch-Code:
     docker:
-      - image: alpine:3.15
+      - image: cimg/base:2021.04
+    steps:
+      - checkout
+      - run:
+          name: Getting the Code
+          command: |
+            ls -al
+            echo '^^^Your repo files^^^'
+  # running a node container
+  Using-Node:
+    docker:
+      - image: cimg/node:18.0
     steps:
       - run:
-          name: The First Step
+          name: Running the Node Container
           command: |
-            echo 'Hello World!'
-            echo 'This is the delivery pipeline'
+            node -v
+workflows:
+  Example-Workflow:
+    jobs:
+      - Fetch-Code
+      - Using-Node:
+          requires:
+            - Fetch-Code
