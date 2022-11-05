@@ -1,29 +1,21 @@
 version: 2.1
+orbs:
+  node: circleci/node@5.0.2
+
 jobs:
-  # fetching code from the repo
-  Fetch-Code:
-    docker:
-      - image: cimg/base:2021.04
+  build_and_test:
+    executor: node/default
     steps:
       - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      # - run:
+      #     command: npm run test
+      #     name: Run tests
       - run:
-          name: Getting the Code
-          command: |
-            ls -al
-            echo '^^^Your repo files^^^'
-  # running a node container
-  Using-Node:
-    docker:
-      - image: cimg/node:18.0
-    steps:
-      - run:
-          name: Running the Node Container
-          command: |
-            node -v
-workflows:
-  Example-Workflow:
-    jobs:
-      - Fetch-Code
-      - Using-Node:
-          requires:
-            - Fetch-Code
+          command: npm run build
+          name: Build app
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .
