@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-
 contract MsToken is Context, IERC20, IERC20Metadata {
     using SafeMath for uint256;
 
@@ -79,7 +78,7 @@ contract MsToken is Context, IERC20, IERC20Metadata {
         uint256 currentAllowance = allowance(owner, spender);
         require(currentAllowance >= subtractedValue, "Decreased allowance is below zero");
 
-        _approve(owner, spender, currentAllowance - subtractedValue);
+        _approve(owner, spender, currentAllowance.sub(subtractedValue));
 
         return true;
     }
@@ -101,7 +100,7 @@ contract MsToken is Context, IERC20, IERC20Metadata {
         require(owner != address(0), "Approve - owner cannot be the zero address");
         require(spender != address(0), "Approve - spender cannot be the zero address");
 
-        _allowances[owner][spender] = amount;
+        _allowances[owner][spender].add(amount);
         emit Approval(owner, spender, amount);
     }
 

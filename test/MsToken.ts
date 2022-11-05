@@ -1,77 +1,101 @@
 import { expect } from 'chai';
 import hre from 'hardhat';
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('MsToken', function () {
     const tokenName: string = 'MsToken';
     const tokenSymbol: string = 'MST';
-    const tokenTotalSupply: string = '1000.0';
+    const tokenDecimals: number = 18;
 
     async function deployMsTokenFixture() {
-        const MsTokenTemplate = await hre.ethers.getContractFactory('MsToken');
-        const initialSupply = hre.ethers.utils.parseEther('1000');
-        const MsToken = await MsTokenTemplate.deploy(tokenName, tokenSymbol, initialSupply);
+        const MsTokenTemplate = await hre.ethers.getContractFactory(tokenName);
+        const [owner, addr1, addr2] = await hre.ethers.getSigners();
+        const MsToken = await MsTokenTemplate.deploy(tokenName, tokenSymbol, 100);
         const msToken = await MsToken.deployed();
     
-        return { msToken };
+        return { msToken, owner, addr1, addr2 };
     }
 
-    it('Should initialize the contract with the appropriate attributes', async function () {
-        const { msToken } = await loadFixture(deployMsTokenFixture);
+    describe('Deployment', function () {
+        it('Should initialize the contract with the appropriate attributes', async function () {
+            const { msToken } = await loadFixture(deployMsTokenFixture);
+    
+            expect(tokenName).to.equal(await msToken.name());
+            expect(tokenSymbol).to.equal(await msToken.symbol());
+            expect(tokenDecimals).to.equal(await msToken.decimals());
+        });
+    
+        it('Should set the proper total supply of the contact', async () => {
+            const { msToken, owner } = await loadFixture(deployMsTokenFixture);
 
-        expect(tokenName).to.equal(await msToken.name());
-        expect(tokenSymbol).to.equal(await msToken.symbol());
+            const ownerBalance = await msToken.balanceOf(owner.address);
+            expect(await msToken.totalSupply()).to.equal(ownerBalance);
+        });
     });
 
-    it('Should set the proper total supply of the contact', async () => {
-        const { msToken } = await loadFixture(deployMsTokenFixture);
-        const totalSupply = await msToken.totalSupply();
-        const totalSupplyInEther = hre.ethers.utils.formatEther(totalSupply);
+    describe('Transfer', function () {
+        it('Should transfer tokens between accounts', async function () {
+            const { msToken, owner, addr1, addr2 } = await loadFixture(deployMsTokenFixture);
+    
+            await expect(msToken.transfer(addr1.address, 50))
+                .to.changeTokenBalances(msToken, [owner, addr1], [-50, 50]);
 
-        expect(tokenTotalSupply).to.equal(totalSupplyInEther);
+            await expect(msToken.transfer(addr1.address, 50)).to.emit(msToken, 'Transfer');
+
+            await expect(msToken.connect(addr1).transfer(addr2.address, 50))
+                .to.changeTokenBalances(msToken, [addr1, addr2], [-50, 50]);
+        });
+
+        it('Should revert the transfer if there are insufficient funds', async function () {
+            const { msToken, addr1 } = await loadFixture(deployMsTokenFixture);
+    
+            await expect(msToken.transfer(addr1.address, 150))
+                .to.be.revertedWith('Transfer amount exceeds balance');
+        });
     });
 
-    it('Should allocate the total supply to the contract owner', async () => {
-        const { msToken } = await loadFixture(deployMsTokenFixture);
+    describe('Approval and allowances', function () {
+        it('Should approve a spender', async function () {
+            const { msToken, owner, addr1 } = await loadFixture(deployMsTokenFixture);
+    
+            await expect(msToken.approve(addr1.address, 50)).to.emit(msToken, 'Approval');
+            
+            const allowance = await msToken.allowance(owner.address, addr1.address);
+            expect(allowance).to.equal(50);
+        });
 
-        const [owner] = await hre.ethers.getSigners();
-        const ownerBalance = await msToken.balanceOf(owner.getAddress());
-        const formattedOwnerBalance = hre.ethers.utils.formatEther(ownerBalance);
+        it('Should increase allowance', async function () {
+            const { msToken, owner, addr1 } = await loadFixture(deployMsTokenFixture);
+    
+            await expect(msToken.approve(addr1.address, 50)).to.emit(msToken, 'Approval');
+            const allowance = await msToken.allowance(owner.address, addr1.address);
+            expect(allowance).to.equal(50);
 
-        expect(tokenTotalSupply).to.equal(formattedOwnerBalance);
-    });
+            await expect(msToken.increaseAllowance(addr1.address, 20)).to.emit(msToken, 'Approval');
+            const increasedAllowance = await msToken.allowance(owner.address, addr1.address);
+            expect(increasedAllowance).to.equal(70);
+        });
 
-    it('Should successfully transfer tokens from one account to another', async () => {
-        const { msToken } = await loadFixture(deployMsTokenFixture);
-        const [owner, otherAccount] = await hre.ethers.getSigners();
-        const ownerAddress = await owner.getAddress();
-        const otherAccountAddress = await otherAccount.getAddress();
+        it('Should decrease allowance', async function () {
+            const { msToken, owner, addr1 } = await loadFixture(deployMsTokenFixture);
+    
+            await expect(msToken.approve(addr1.address, 50)).to.emit(msToken, 'Approval');
+            const allowance = await msToken.allowance(owner.address, addr1.address);
+            expect(allowance).to.equal(50);
 
-        try {
-            const amountToTransfer = hre.ethers.utils.parseEther('250');
-            const formattedAmountToTransfer = hre.ethers.utils.formatEther(amountToTransfer);
+            await expect(msToken.decreaseAllowance(addr1.address, 20)).to.emit(msToken, 'Approval');
+            const increasedAllowance = await msToken.allowance(owner.address, addr1.address);
+            expect(increasedAllowance).to.equal(30);
+        });
 
-            // Transfer from the owner account to another account
-            const receipt = await msToken.transfer(otherAccountAddress, amountToTransfer, {
-                from: ownerAddress
-            });
+        it('Should not decrease allowance if the subtracted value is bigger than the allowance value', async function () {
+            const { msToken, owner, addr1 } = await loadFixture(deployMsTokenFixture);
+    
+            await expect(msToken.approve(addr1.address, 50)).to.emit(msToken, 'Approval');
+            const allowance = await msToken.allowance(owner.address, addr1.address);
+            expect(allowance).to.equal(50);
 
-            // Verify transaction logs
-            expect(receipt.from).to.equal(ownerAddress);
-            expect(receipt.to).to.equal(otherAccountAddress);
-            expect(receipt.value.toString()).to.equal(formattedAmountToTransfer);
-            await expect(msToken.transfer(otherAccountAddress, amountToTransfer)).to.emit(msToken, 'Transfer');
-
-            // grabbing each balances
-            const balanceAccount0 = await msToken.balanceOf(ownerAddress)
-            const balanceAccount1 = await msToken.balanceOf(otherAccountAddress);
-
-            // Checking that balances were updated
-            expect(balanceAccount0.toNumber()).to.equal(750000);
-            expect(balanceAccount1.toNumber()).to.equal(250000);
-
-        } catch (error: any) {
-            // assert(error.message.indexOf('revert') >= 0, 'error must contain the term revert');
-        }
-    });
+            await expect(msToken.decreaseAllowance(addr1.address, 60)).to.be.revertedWith('Decreased allowance is below zero');
+        });
+    })
 });
