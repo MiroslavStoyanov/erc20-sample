@@ -3,9 +3,9 @@ import hre from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('MsToken', function () {
-    const tokenName: string = 'MsToken';
-    const tokenSymbol: string = 'MST';
-    const tokenDecimals: number = 18;
+    const tokenName = 'MsToken';
+    const tokenSymbol = 'MST';
+    const tokenDecimals = 18;
 
     async function deployMsTokenFixture() {
         const MsTokenTemplate = await hre.ethers.getContractFactory(tokenName);
@@ -92,8 +92,7 @@ describe('MsToken', function () {
             const { msToken, owner, addr1 } = await loadFixture(deployMsTokenFixture);
     
             await expect(msToken.approve(addr1.address, 50)).to.emit(msToken, 'Approval');
-            const allowance = await msToken.allowance(owner.address, addr1.address);
-            expect(allowance).to.equal(50);
+            await msToken.allowance(owner.address, addr1.address);
 
             await expect(msToken.decreaseAllowance(addr1.address, 60)).to.be.revertedWith('Decreased allowance is below zero');
         });

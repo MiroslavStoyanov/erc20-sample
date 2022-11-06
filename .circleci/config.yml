@@ -20,7 +20,7 @@ jobs:
           paths:
             - .
 
-workflows:
-  test_my_app:
-    jobs:
-      - build_and_test
+# workflows:
+#   test_my_app:
+#     jobs:
+#       - build_and_test

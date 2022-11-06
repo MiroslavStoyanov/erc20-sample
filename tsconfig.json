@@ -2,12 +2,18 @@
   "compilerOptions": {
     "target": "es2020",
     "module": "commonjs",
-    "types": ["mocha", "chai", "node"],
+    "types": ["mocha", "chai", "node", "cors", "debug", "express"],
     "typeRoots": ["./node_modules/@types"],
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "outDir": "./dist",
     "skipLibCheck": true,
     "resolveJsonModule": true
-  }
+  },
+  "exclude": [
+    "test/",
+    "scripts/",
+    "./hardhat.config.ts"
+  ]
 }
