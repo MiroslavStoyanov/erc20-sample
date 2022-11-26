@@ -8,10 +8,11 @@
     "url": "git+https://github.com/MiroslavStoyanov/erc20-sample.git"
   },
   "scripts": {
-    "start": "tsc && node --unhandled-rejections=strict ./dist/app.js",
+    "start": "tsc && node --unhandled-rejections=strict ./dist/server/app.js",
     "debug": "export DEBUG=* && npm run start",
     "lint": "eslint . --ext .ts",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "compile": "npx hardhat compile"
   },
   "author": "Miroslav Stoyanov",
   "license": "ISC",
